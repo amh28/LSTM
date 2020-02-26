@@ -1,9 +1,11 @@
 import os
-from Layer import RNN
 import tensorflow as tf
 tf.get_logger().setLevel('ERROR')
 from tensorflow.python.keras.layers import Dense, Input, Embedding
 from tensorflow.python.keras.models import Model, Sequential
+
+from Layer import RNN
+from Layer import LSTM
 
 import mitdeeplearning as mdl
 import numpy as np
@@ -11,6 +13,7 @@ import time
 import functools
 from IPython import display as ipythondisplay
 from tqdm import tqdm
+
 
 
 def get_batch(vectorized_songs, seq_length, batch_size):
@@ -26,10 +29,10 @@ def get_batch(vectorized_songs, seq_length, batch_size):
     y_batch = np.reshape(output_batch, [batch_size, seq_length])
     return x_batch, y_batch
 
-def build_model(vocab_size, embedding_dim, rnn_units, batch_size, t):
+def build_model(model_class,vocab_size, embedding_dim, rnn_units, batch_size, t):
     model = Sequential()
     model.add(Embedding(vocab_size, embedding_dim, batch_input_shape=[batch_size, t]))
-    model.add(RNN.RNN(rnn_units))
+    model.add(LSTM.LSTM(rnn_units))
     model.add(Dense(vocab_size))
     return model
 
@@ -84,8 +87,8 @@ def train_step(x, y,model,optimizer):
     optimizer.apply_gradients(zip(grads, model.trainable_weights))
     return loss
 
-def test(char2idx,idx2char,vocab_size,embedding_dim,rnn_units,batch_size,seq_length,sample_num,checkpoint_prefix):
-    model = build_model(vocab_size, embedding_dim, rnn_units, batch_size,seq_length) # TODO
+def test(model_class,char2idx,idx2char,vocab_size,embedding_dim,rnn_units,batch_size,seq_length,sample_num,checkpoint_prefix):
+    model = build_model(model_class,vocab_size, embedding_dim, rnn_units, batch_size,seq_length) # TODO
     model.load_weights(checkpoint_prefix)
     model.build(tf.TensorShape([1, None]))
     model.summary()
@@ -102,8 +105,9 @@ def test(char2idx,idx2char,vocab_size,embedding_dim,rnn_units,batch_size,seq_len
             print("Generated song", i)
             ipythondisplay.display(waveform)
 
-def train(vectorized_songs,num_training_iterations,learning_rate, vocab_size,embedding_dim,rnn_units,batch_size,seq_length,checkpoint_prefix):
-    model = build_model(vocab_size, embedding_dim, rnn_units, batch_size,seq_length)
+def train(model_class, vectorized_songs,num_training_iterations,learning_rate, vocab_size,embedding_dim,rnn_units,batch_size,seq_length,checkpoint_prefix):
+    model = build_model(model_class,vocab_size, embedding_dim, rnn_units, batch_size,seq_length)
+    model.summary()
     optimizer = tf.keras.optimizers.Adam(learning_rate)
 
     history = []
@@ -120,7 +124,7 @@ def train(vectorized_songs,num_training_iterations,learning_rate, vocab_size,emb
         plotter.plot(history)
 
         # Update the model with the changed weights!
-        if iter % 100 == 0:     
+        if iter % 50 == 0:     
             print("iter {}, loss: {}".format(iter,loss.numpy().mean()))
             model.save_weights(checkpoint_prefix)
 
@@ -147,7 +151,6 @@ print("scalar_loss:      ", example_batch_loss.numpy().mean())'''
 
 
 def main():
-    # Download the dataset
     songs = mdl.lab1.load_training_data()
     example_song = songs[0]
     #mdl.lab1.play_song(example_song)
@@ -169,8 +172,9 @@ def main():
     
     num_training_iterations = 2000# Increase this to train longer
     batch_size = 4  
-    seq_length = 100  
+    seq_length = 100
     learning_rate = 5e-3  # Experiment between 1e-5 and 1e-1
+    sample_num=10000     
 
     # Checkpoint location: 
     checkpoint_dir = './training_checkpoints'
@@ -179,14 +183,12 @@ def main():
     ##########
     #Training
     ##########
-    #train(vectorized_songs,num_training_iterations,learning_rate, vocab_size,embedding_dim,rnn_units,batch_size,seq_length,checkpoint_prefix)
+    train(LSTM,vectorized_songs,num_training_iterations,learning_rate, vocab_size,embedding_dim,rnn_units,batch_size,seq_length,checkpoint_prefix)
     
     ##########
     #Testing
-    ##########
-    sample_num=10000 
-    
-    test(char2idx,idx2char,vocab_size,embedding_dim,rnn_units,batch_size,seq_length,sample_num,checkpoint_prefix)
+    ##########    
+    #test(LSTM,char2idx,idx2char,vocab_size,embedding_dim,rnn_units,batch_size,seq_length,sample_num,checkpoint_prefix)
     
 
 if __name__ == "__main__":

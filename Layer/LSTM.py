@@ -22,14 +22,18 @@ class LSTM(Layer):
         batch_size = inputs.shape[0]
         timesteps = inputs.shape[1]
         states = tf.zeros([batch_size,1,self.num_cells])
+        cells = tf.zeros([batch_size,1,self.num_cells])
         
         for t in range(0,timesteps):
             #print("timestep ",t)                    
-            s = self.lstmCell(inputs= inputs[:,t,:],states=states) 
-            s = K.expand_dims(s,1)
-            states = tf.concat([states,s],1)
-            #print("s shape: ",s.shape)            
+            cell, hidden = self.lstmCell(inputs= inputs[:,t,:],cells=cells,states=states)            
+            cell = K.expand_dims(cell,1)
+            hidden = K.expand_dims(hidden,1)
+            states = tf.concat([states,hidden],1)
+            cells = tf.concat([cells,cell],1)
+            
         states = states[:,1:,:]        
+        cells = cells[:,1:,:]        
         return states
     
     def compute_output_shape(self, input_shape):
