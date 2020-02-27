@@ -20,6 +20,7 @@ class MyRNNCell(Layer):
 
     #states = [batch_size,1,self.num_cells]
     def call(self, inputs, states, log=False):
+        print("here")
         prev_stat = states[:,-1,:]
         xh = K.dot(inputs,self.kernel) 
         hh = K.dot(prev_stat,self.recurrent_kernel)
