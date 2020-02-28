@@ -85,22 +85,30 @@ def train(model_class, train_data, val_data,num_training_iterations,learning_rat
         loss = train_step(x_batch, y_batch,model,optimizer)
 
         # Update the progress bar
-        history.append(loss.numpy().mean())
+        history.append((iter,loss.numpy().mean()))
         plotter.plot(history)
 
         # Perform validation
-        if iter % val_every == 0:
+        if iter % val_every == 0:            
             x_val, y_val = get_batch(val_data,seq_length,batch_size)
-            loss_val = val_step(x_val, y_val,model)
-            val.append(loss_val.numpy().mean())
+            loss_val = val_step(x_val, y_val,model)          
+            val.append((iter,loss_val.numpy().mean()))
+
+            h, = plt.plot(*zip(*history), label='Train')
+            v, = plt.plot(*zip(*val), label='Val')
+            plt.legend(handles=[h, v])
+            plt.xlabel("Iterations")
+            plt.ylabel("Loss")
+            ipythondisplay.clear_output(wait=True)
+            ipythondisplay.display(plt.gcf())
 
         # Update the model with the changed weights!
-        if iter % 50 == 0:                 
-            print("iter {}, loss: {}".format(iter,loss.numpy().mean()))            
-            model.save_weights(checkpoint_prefix)
+        #if iter % 50 == 0:                 
+        #    print("iter {}, loss: {}".format(iter,loss.numpy().mean()))            
+        #    model.save_weights(checkpoint_prefix)
 
     # Save the trained model and the weights
-    model.save_weights(checkpoint_prefix)
+    #model.save_weights(checkpoint_prefix)
 
 def test(model_class,char2idx,idx2char,vocab_size,embedding_dim,rnn_units,batch_size,seq_length,sample_num,checkpoint_prefix):
     model = build_model(model_class,vocab_size, embedding_dim, rnn_units, batch_size,seq_length) # TODO
